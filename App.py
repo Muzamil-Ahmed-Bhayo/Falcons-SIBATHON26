@@ -2,7 +2,8 @@ from flask import Flask, render_template, redirect, url_for, flash, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 import os
 
 # Initialize Flask app
@@ -10,6 +11,9 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'  # Change this to a random secret key in production
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize token serializer for password reset
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # Initialize database
 db = SQLAlchemy(app)
@@ -113,6 +117,59 @@ def logout():
 @login_required
 def profile():
     return render_template('profile.html')
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            # Generate a secure token
+            token = serializer.dumps(user.email, salt='password-reset-salt')
+
+            # In a real application, you would send an email with the reset link
+            # For this example, we'll just flash the token (not secure for production)
+            reset_url = url_for('reset_password', token=token, _external=True)
+            flash(f'Password reset link has been sent to your email. For demo purposes, here is the link: {reset_url}')
+            return redirect(url_for('login'))
+        else:
+            flash('Email not found in our records.')
+
+    return render_template('reset_password.html', token=None)
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('profile'))
+
+    try:
+        # Verify the token (expires after 1 hour)
+        email = serializer.loads(token, salt='password-reset-salt', max_age=3600)
+        user = User.query.filter_by(email=email).first()
+
+        if not user:
+            flash('Invalid or expired token.')
+            return redirect(url_for('forgot_password'))
+
+        if request.method == 'POST':
+            password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
+
+            if password != confirm_password:
+                flash('Passwords do not match.')
+                return redirect(url_for('reset_password', token=token))
+
+            user.set_password(password)
+            db.session.commit()
+            flash('Your password has been updated! You can now log in with your new password.')
+            return redirect(url_for('login'))
+
+        return render_template('reset_password.html', token=token)
+
+    except (SignatureExpired, BadSignature):
+        flash('The password reset link is invalid or has expired.')
+        return redirect(url_for('forgot_password'))
 
 # Create database tables
 def create_tables():
