@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - SIBATHON26{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">User Profile</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center mb-3">
+                        <!-- User avatar placeholder -->
+                        <div class="bg-light rounded-circle mx-auto d-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
+                            <span class="display-4 text-secondary">{{ current_user.username[0] | upper }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <h4>Account Information</h4>
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th scope="row">Username:</th>
+                                    <td>{{ current_user.username }}</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Email:</th>
+                                    <td>{{ current_user.email }}</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Member Since:</th>
+                                    <td>{{ current_user.created_at.strftime('%B %d, %Y') }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-end">
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary me-2">Back to Home</a>
+                    <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
