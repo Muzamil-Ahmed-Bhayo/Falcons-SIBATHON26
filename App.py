@@ -43,71 +43,71 @@ def load_user(user_id):
 # Routes
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('login.html') # currently moving to login instead index
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    
+        return redirect(url_for('profile'))
+
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        
+
         user = User.query.filter_by(username=username).first()
-        
+
         if user is None or not user.check_password(password):
             flash('Invalid username or password')
             return redirect(url_for('login'))
-        
+
         login_user(user)
-        return redirect(url_for('index'))
-    
+        return redirect(url_for('profile'))
+
     return render_template('login.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    
+        return redirect(url_for('profile'))
+
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
-        
+
         # Check if passwords match
         if password != confirm_password:
             flash('Passwords do not match')
-            return redirect(url_for('signup'))
-        
+            return redirect(url_for('login'))
+
         # Check if username already exists
         if User.query.filter_by(username=username).first():
             flash('Username already exists')
-            return redirect(url_for('signup'))
-        
+            return redirect(url_for('login'))
+
         # Check if email already exists
         if User.query.filter_by(email=email).first():
             flash('Email already exists')
-            return redirect(url_for('signup'))
-        
+            return redirect(url_for('login'))
+
         # Create new user
         user = User(username=username, email=email)
         user.set_password(password)
-        
+
         db.session.add(user)
         db.session.commit()
-        
+
         flash('Account created successfully! You can now log in.')
         return redirect(url_for('login'))
-    
-    return render_template('signup.html')
+
+    return redirect(url_for('login'))
 
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    return redirect(url_for('login'))
 
 @app.route('/profile')
 @login_required
